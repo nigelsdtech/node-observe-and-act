@@ -1,2 +1,2 @@
 # node-observe-and-act
-Framework for setting up observers reading from a socket
+Framework for playing around with the observer pattern

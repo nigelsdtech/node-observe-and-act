@@ -1,0 +1,15 @@
+subject: EWeLink
+subjectConfigs:
+  eWeLinkCredentials:
+    email: fake@person.com
+    password: superPassword
+    region: us
+  observers:
+    - type: mirrorDeviceSwitchStatus      
+      shortName: Motion sensor turns on porch light
+      sourceDeviceName: Motion Sensor
+      satelliteDeviceName: Porch light
+    - type: mirrorDeviceSwitchStatus
+      shortName: Motion sensor turns on garage light
+      sourceDeviceName: Motion Sensor
+      satelliteDeviceName: Garage light

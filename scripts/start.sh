@@ -1,6 +1,6 @@
 #!/bin/sh
 
-#. ~/bin/setup_node_env.sh
+. ~/bin/setup_node_env.sh
 
 # extract options and their arguments into variables.
 while getopts i: FLAG; do

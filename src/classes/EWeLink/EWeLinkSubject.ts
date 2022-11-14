@@ -2,7 +2,11 @@ import Subject from '../Subject'
 import {eWeLinkCredentials, iLogger, eWeLinkApi, iSendErrorNotice} from '../../interfaces/commonInterfaces'
 import EWeLinkMirrorDeviceSwitchStatus from './EWeLinkMirrorDeviceSwitchStatus'
 import Observer from '../Observer'
+import WebSocketAsPromised  from 'websocket-as-promised'
+import sleep from 'sleep-promise'
+
 const e = require('ewelink-api')
+
 
 // Extend this with more configs as more modules are added
 type eWeLinkObserverConfig = {
@@ -31,7 +35,7 @@ export class EWeLinkSubject extends Subject {
     private readonly eWeLinkConnection: eWeLinkApi;
     private readonly deviceMapPromise: Promise<eWeLinkDeviceDetails[]>
     private deviceMap!: Record<string, string>
-    private readonly observerConfigs: eWeLinkObserverConfig[]
+    private readonly observerConfigs: eWeLinkObserverConfig[];
 
 
     public constructor({
@@ -91,23 +95,62 @@ export class EWeLinkSubject extends Subject {
                 const err = e as Error
                 this.log.error(`[${this.name}] Could not attach observer: ${err.message}`)
             }
-
         })
 
         this.log.debug(`Getting eWeLinkCredentials`)
         // login into eWeLink
         await this.eWeLinkConnection.getCredentials();
 
+        this.keepSocketAlive(null)
+
+    }
+
+    private async keepSocketAlive(
+        existingSocket: null | WebSocketAsPromised,
+        checkTime: number = 65000
+    ): Promise<WebSocketAsPromised> {
+
+        if (!existingSocket) {
+            const socket = await this.openSocket()
+            return this.keepSocketAlive(socket,checkTime)
+        }
+
+        if (existingSocket.isClosed) {
+            return this.keepSocketAlive(null,checkTime)
+        }
+
+        await sleep(checkTime)
+
+        return this.keepSocketAlive(existingSocket,checkTime)
+
+    }
+
+    private async openSocket(): Promise<WebSocketAsPromised> {
+
         this.log.info(`Opening websocket...`)
         // call openWebSocket method with a callback as argument
-        await this.eWeLinkConnection.openWebSocket(async (data: any) => {
+        const socket: WebSocketAsPromised = await this.eWeLinkConnection.openWebSocket(async (data: any) => {
             // data is the message from eWeLink
             this.log.info(`[${this.name}] message received:`)
             this.log.info(JSON.stringify(data,null,"\t"))
             this.notify(data)
         });
 
+        socket.onError.addListener(({code, reason}) => {
+            const errMsg = `Socket error: ${code}, ${reason}`
+            this.log.error(errMsg)
+            this.errorNotifier({errMsg})
+        })
+        socket.onClose.addListener(({code, reason}) => {
+            const errMsg = `Socket has been closed: ${code}, ${reason}`
+            this.log.error(errMsg)
+            this.errorNotifier({errMsg})
+        })
+
+        return socket
+
     }
+
 
     private async setDeviceMap(): Promise<void> {
 

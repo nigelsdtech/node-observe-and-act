@@ -1,6 +1,6 @@
 {
     "name": "node-observe-and-act",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "",
     "main": "index.js",
     "scripts": {
@@ -22,7 +22,9 @@
         "js-yaml": "^4.1.0",
         "log4js": "^0.6.37",
         "reporter": "github:nigelsdtech/reporter",
-        "typescript": "^3.9.7"
+        "sleep-promise": "^9.1.0",
+        "typescript": "^3.9.7",
+        "websocket-as-promised": "^2.0.1"
     },
     "devDependencies": {
         "@types/chai": "^4.2.8",

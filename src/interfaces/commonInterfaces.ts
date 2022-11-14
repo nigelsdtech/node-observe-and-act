@@ -19,5 +19,5 @@ export interface eWeLinkCredentials {
 }
 
 export type eWeLinkApi = {
-    getCredentials(): void;
+    getCredentials(): Promise<void>;
 } & eWelink

@@ -18,7 +18,9 @@ type eWeLinkObserverConfig = {
 
 export type eWeLinkConfig = {
     eWeLinkCredentials: eWeLinkCredentials
-    observers : eWeLinkObserverConfig[]
+    observers : eWeLinkObserverConfig[],
+    sendEmailOnSocketClose: boolean,
+    sendEmailOnSocketError: boolean
 }
 
 type eWeLinkDeviceDetails = {
@@ -36,13 +38,18 @@ export class EWeLinkSubject extends Subject {
     private readonly deviceMapPromise: Promise<eWeLinkDeviceDetails[]>
     private deviceMap!: Record<string, string>
     private readonly observerConfigs: eWeLinkObserverConfig[];
+    private readonly sendEmailOnSocketClose: boolean;
+    private readonly sendEmailOnSocketError: boolean;
+
 
 
     public constructor({
         log,
         eWeLinkCredentials,
         observers,
-        errorNotifier
+        errorNotifier,
+        sendEmailOnSocketClose = false,
+        sendEmailOnSocketError = true
     }: 
         eWeLinkConfig
         & {
@@ -55,6 +62,8 @@ export class EWeLinkSubject extends Subject {
         this.eWeLinkConnection = new e(eWeLinkCredentials);
         this.deviceMapPromise = this.eWeLinkConnection.getDevices()
         this.observerConfigs = observers
+        this.sendEmailOnSocketClose = sendEmailOnSocketClose
+        this.sendEmailOnSocketError = sendEmailOnSocketError
         this.log.debug(`Initialized Subject ${this.name}.`)
     }
 
@@ -139,12 +148,12 @@ export class EWeLinkSubject extends Subject {
         socket.onError.addListener(({code, reason}) => {
             const errMsg = `Socket error: ${code}, ${reason}`
             this.log.error(errMsg)
-            this.errorNotifier({errMsg})
+            if (this.sendEmailOnSocketError) this.errorNotifier({errMsg})
         })
         socket.onClose.addListener(({code, reason}) => {
             const errMsg = `Socket has been closed: ${code}, ${reason}`
             this.log.error(errMsg)
-            this.errorNotifier({errMsg})
+            if (this.sendEmailOnSocketClose) this.errorNotifier({errMsg})
         })
 
         return socket

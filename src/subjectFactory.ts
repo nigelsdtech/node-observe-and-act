@@ -23,12 +23,8 @@ export function generateSubject ({
     switch (subjectName) {
         case 'EWeLink' : {
             const config: eWeLinkConfig = subjectConfigs as eWeLinkConfig
-            return new EWeLinkSubject({
-                log,
-                eWeLinkCredentials: config.eWeLinkCredentials,
-                observers: config.observers,
-                errorNotifier
-            });
+            const args = Object.assign({}, config, {log, errorNotifier})
+            return new EWeLinkSubject(args);
         }
         default : {
             throw new Error (`Unknown subject: ${subjectName}`)

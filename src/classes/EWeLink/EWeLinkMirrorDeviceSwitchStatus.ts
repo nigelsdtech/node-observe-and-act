@@ -8,13 +8,12 @@ export default class EWeLinkMirrorDeviceSwitchStatus extends Observer {
 
 
     public constructor(
-        protected log: iLogger,
-        protected name: string,
-        protected errorNotifier: iSendErrorNotice,
+        log: iLogger,
+        name: string,
+        errorNotifier: iSendErrorNotice,
         private readonly sourceDeviceId: string,
         private readonly satelliteDeviceId: string,
         private readonly eWeLinkConnection: eWeLinkApi
-        
     ) {
         super(log, name, errorNotifier)
         this.log.info(`[${this.name}] Listening for ${sourceDeviceId} and updating ${satelliteDeviceId}`)
@@ -41,13 +40,18 @@ export default class EWeLinkMirrorDeviceSwitchStatus extends Observer {
         this.log.info(`[${this.name}]: Setting new switch status on ${this.satelliteDeviceId} to ${status}...`)
 
         try {
-            await this.eWeLinkConnection.setDevicePowerState(this.satelliteDeviceId,status)
-            this.log.info(`[${this.name}]: Set new switch status on ${this.satelliteDeviceId} to ${status}.`)
+            const resp = await this.eWeLinkConnection.setDevicePowerState(this.satelliteDeviceId,status)
+            if ((resp).msg) this.sendError(`code: ${resp.error}, message: ${resp.msg}`)
+            this.log.info(`[${this.name}]: Set new switch status on ${this.satelliteDeviceId} to ${resp.state}.`)
         } catch (e) {
             const err = e as Error
-            this.log.error(`[${this.name}]: Update error - ${err.message}`)
-            this.errorNotifier({errMsg: err.message})
+            this.sendError(`[${this.name}]: Update error- ${err.message}`)
         }
+    }
+
+    private async sendError(errMsg:string) {
+        this.log.error(`[${this.name}]: ${errMsg}`)
+        this.errorNotifier({errMsg})
     }
 
 }

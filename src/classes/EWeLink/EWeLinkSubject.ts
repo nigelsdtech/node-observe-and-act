@@ -36,7 +36,8 @@ export class EWeLinkSubject extends Subject {
 
     private readonly eWeLinkConnection: eWeLinkApi;
     private readonly deviceMapPromise: Promise<eWeLinkDeviceDetails[]>
-    private deviceMap!: Record<string, string>
+    private deviceMapByName!: Record<string, string>
+    private deviceMapById!: Record<string, string>
     private readonly observerConfigs: eWeLinkObserverConfig[];
     private readonly sendEmailOnSocketClose: boolean;
     private readonly sendEmailOnSocketError: boolean;
@@ -73,15 +74,15 @@ export class EWeLinkSubject extends Subject {
             case 'mirrorDeviceSwitchStatus': {
                 const {shortName: name, sourceDeviceName, satelliteDeviceName} = observerConfig;
 
-                if (!this.deviceMap[sourceDeviceName]) throw new Error (`Could not find device ${sourceDeviceName}`)
-                if (!this.deviceMap[satelliteDeviceName]) throw new Error (`Could not find device ${satelliteDeviceName}`)
+                if (!this.deviceMapByName[sourceDeviceName]) throw new Error (`Could not find device ${sourceDeviceName}`)
+                if (!this.deviceMapByName[satelliteDeviceName]) throw new Error (`Could not find device ${satelliteDeviceName}`)
 
                 return new EWeLinkMirrorDeviceSwitchStatus(
                     this.log,
                     name,
                     this.errorNotifier,
-                    this.deviceMap[sourceDeviceName],
-                    this.deviceMap[satelliteDeviceName],
+                    this.deviceMapByName[sourceDeviceName],
+                    this.deviceMapByName[satelliteDeviceName],
                     this.eWeLinkConnection
                 )
             }
@@ -93,7 +94,7 @@ export class EWeLinkSubject extends Subject {
     public async startWorking() {
 
         this.log.info(`Loading devices...`)
-        await this.setDeviceMap()
+        await this.setDeviceMaps()
 
         this.log.debug(`Attaching observers...`)
         this.observerConfigs.forEach(oc => {
@@ -141,6 +142,13 @@ export class EWeLinkSubject extends Subject {
         const socket: WebSocketAsPromised = await this.eWeLinkConnection.openWebSocket(async (data: any) => {
             // data is the message from eWeLink
             this.log.info(`[${this.name}] message received:`)
+
+            if (typeof data == 'object' && data.deviceid) {
+                const deviceName = this.deviceMapById[data.deviceId]
+                this.log.info(`[${this.name}] Message is about ${deviceName}`)
+                return
+            }
+
             this.log.info(JSON.stringify(data,null,"\t"))
             this.notify(data)
         });
@@ -161,17 +169,27 @@ export class EWeLinkSubject extends Subject {
     }
 
 
-    private async setDeviceMap(): Promise<void> {
+    private async setDeviceMaps(): Promise<void> {
 
         const rawData = await this.deviceMapPromise
 
-        const deviceMap = rawData.reduce((accumulator: Record<string,string>, deviceDetails: eWeLinkDeviceDetails) => {
-            return Object.assign({},accumulator,{[deviceDetails.name]: deviceDetails.deviceid})
-        }, {})
+        const {deviceMapByName, deviceMapById} = rawData.reduce((
+            {deviceMapByName, deviceMapById},
+            deviceDetails: eWeLinkDeviceDetails
+        ) => {
+            return {
+                deviceMapByName: Object.assign({},deviceMapByName,{[deviceDetails.name]: deviceDetails.deviceid}),
+                deviceMapById:   Object.assign({},deviceMapById,{[deviceDetails.deviceid]: deviceDetails.name})
+            }
+        }, {
+            deviceMapByName: {},
+            deviceMapById: {}
+        })
 
-        this.log.info(`Device map: ${JSON.stringify(deviceMap,null,"\t")}`)
+        this.log.info(`Device map: ${JSON.stringify(deviceMapByName,null,"\t")}`)
 
-        this.deviceMap = deviceMap
+        this.deviceMapByName = deviceMapByName
+        this.deviceMapById = deviceMapById
     }
 
 }

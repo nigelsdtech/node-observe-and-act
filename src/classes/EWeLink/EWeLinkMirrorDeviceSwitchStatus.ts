@@ -32,14 +32,7 @@ export default class EWeLinkMirrorDeviceSwitchStatus extends Observer {
         }
 
         if (message.action == "sysmsg") return this.processSysMsg(message);
-
-        if (message.action == "update"
-            && message.params
-            && message.params.switch
-            && ["on", "off"].indexOf(message.params.switch) > -1)
-        {
-            return this.updateSwitch(message.params.switch)
-        }
+        if (message.action == "update") return this.processUpdateMsg(message)
 
         this.log.debug(`[${this.name}] Discarding message`)
 
@@ -63,13 +56,41 @@ export default class EWeLinkMirrorDeviceSwitchStatus extends Observer {
 
         const resp = await this.eWeLinkConnection.getDevicePowerState(this.sourceDeviceId)
 
-        if (resp.error) return this.sendError(`Error getting device state - error: ${resp.error}, msg: ${resp.msg}`);
+        this.log.info(`[${this.name}]: Source device state: ${JSON.stringify(resp,null,"\t")}`)
+
+        if (resp.error) {
+            if (resp.error == 503) {
+                this.log.error(`[${this.name}]: Not attempting to update satellite device`)
+                return
+            }
+            return this.sendError(`Error getting source device state - error: ${resp.error}, msg: ${resp.msg}`);
+        }
 
         if (!resp.state) return;
         if (resp.state != "on" && resp.state != "off") return;
 
         this.log.info(`[${this.name}] Power state is ${resp.state}`)
         return this.updateSwitch(resp.state)
+    }
+
+    private async processUpdateMsg(message: {
+        deviceid: string,
+        params: {
+            switch: "on" | "off"
+        }
+    }): Promise<void> {
+
+        this.log.debug(`[${this.name}] Processing update message`)
+
+        if (message.hasOwnProperty("deviceid")
+            && message.deviceid == this.sourceDeviceId
+            && message.hasOwnProperty("params")
+            && message.params.hasOwnProperty("switch")
+            && ["on", "off"].indexOf(message.params.switch) > -1)
+        {
+            return this.updateSwitch(message.params.switch)
+        }
+
     }
 
     private async updateSwitch(state: 'on' | 'off'): Promise<void> {

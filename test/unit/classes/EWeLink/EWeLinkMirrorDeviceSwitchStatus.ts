@@ -23,8 +23,8 @@ describe('EWeLinkMirrorDeviceSwitchStatus', ()=>{
         log,
         'test',
         ()=>{},
-        'myDeviceId',
-        '6789',
+        'mySourceDeviceId',
+        'mySatelliteDeviceId',
         eWeLinkConnectionStub
     )
 
@@ -81,7 +81,13 @@ describe('EWeLinkMirrorDeviceSwitchStatus', ()=>{
                 }
             }, {
                 action: "uninterestingAction",
-                deviceid: "myDeviceId",
+                deviceid: "mySourceDeviceId",
+                params: {
+                    switch: "on"
+                }
+            },{
+                action: "update",
+                deviceid: "mySatelliteDeviceid",
                 params: {
                     switch: "on"
                 }
@@ -97,7 +103,7 @@ describe('EWeLinkMirrorDeviceSwitchStatus', ()=>{
         it('Accepts a relevant update message', async ()=> {
             await elmdss.update({
                 action: "update",
-                deviceid: "myDeviceId",
+                deviceid: "mySourceDeviceId",
                 params: {
                     switch: "on"
                 }
@@ -112,27 +118,47 @@ describe('EWeLinkMirrorDeviceSwitchStatus', ()=>{
             })
 
             it("Bugs out if it can't get device power status", async () => {
-                getPowerStateStub.withArgs("myDeviceId").resolves({
-                    error: "Fake error",
+                getPowerStateStub.withArgs("mySourceDeviceId").resolves({
+                    error: 123,
                     msg: "Fake message"
                 })
 
                 await elmdss.update({
                     action: "sysmsg",
                     apikey: "abcd-efg-hijk",
-                    deviceid: "myDeviceId",
+                    deviceid: "mySourceDeviceId",
                     params: {
                         online: true
                     }
                 })
 
-                getPowerStateStub.calledWith("myDeviceId").should.be.true;
-                sendErrorStub.calledWith(`Error getting device state - error: Fake error, msg: Fake message`).should.be.true
+                getPowerStateStub.calledWith("mySourceDeviceId").should.be.true;
+                sendErrorStub.calledWith(`Error getting source device state - error: 123, msg: Fake message`).should.be.true
+                setPowerStateStub.called.should.be.false
+            })
+
+            it("Gracefully handles 503 errors when getting device power status", async () => {
+                getPowerStateStub.withArgs("mySourceDeviceId").resolves({
+                    error: 503,
+                    msg: "Device is offline"
+                })
+
+                await elmdss.update({
+                    action: "sysmsg",
+                    apikey: "abcd-efg-hijk",
+                    deviceid: "mySourceDeviceId",
+                    params: {
+                        online: true
+                    }
+                })
+
+                getPowerStateStub.calledWith("mySourceDeviceId").should.be.true;
+                sendErrorStub.calledWith(`Error getting device state - error: 503, msg: Device is offline`).should.be.false
                 setPowerStateStub.called.should.be.false
             })
 
             it ("Attempts to change power status on the relevant device", async () => {
-                getPowerStateStub.withArgs("myDeviceId").resolves({
+                getPowerStateStub.withArgs("mySourceDeviceId").resolves({
                     status: 'ok',
                     state: 'off',
                     channel: 1
@@ -141,13 +167,13 @@ describe('EWeLinkMirrorDeviceSwitchStatus', ()=>{
                 await elmdss.update({
                     action: "sysmsg",
                     apikey: "abcd-efg-hijk",
-                    deviceid: "myDeviceId",
+                    deviceid: "mySourceDeviceId",
                     params: {
                         online: true
                     }
                 })
 
-                getPowerStateStub.calledWith("myDeviceId").should.be.true;
+                getPowerStateStub.calledWith("mySourceDeviceId").should.be.true;
                 sendErrorStub.called.should.be.false
                 setPowerStateStub.calledWith("off").should.be.true
             })

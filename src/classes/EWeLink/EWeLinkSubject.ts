@@ -141,15 +141,14 @@ export class EWeLinkSubject extends Subject {
         // call openWebSocket method with a callback as argument
         const socket: WebSocketAsPromised = await this.eWeLinkConnection.openWebSocket(async (data: any) => {
             // data is the message from eWeLink
-            this.log.info(`[${this.name}] message received:`)
+            this.log.info(`[${this.name}] message received: ${JSON.stringify(data,null,"\t")}`)
 
-            if (typeof data == 'object' && data.deviceid) {
+            if (typeof data == 'object' && data.hasOwnProperty("deviceid")) {
                 const deviceName = this.deviceMapById[data.deviceId]
                 this.log.info(`[${this.name}] Message is about ${deviceName}`)
                 return
             }
 
-            this.log.info(JSON.stringify(data,null,"\t"))
             this.notify(data)
         });
 

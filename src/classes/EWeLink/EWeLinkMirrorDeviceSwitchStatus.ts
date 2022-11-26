@@ -24,16 +24,16 @@ export default class EWeLinkMirrorDeviceSwitchStatus extends Observer {
     public async update(message: any) {
 
         if (typeof message != 'object'
-            || !message.params
-            || !message.action
+            || !message.hasOwnProperty("params")
+            || !message.hasOwnProperty("action")
         ) {
-            this.log.debug(`[${this.name}] Discarding irrelevant message`)
+            this.log.debug(`[${this.name}] Message is not an object with params and action`)
             return
         }
 
         if (message.action == "sysmsg") return this.processSysMsg(message);
 
-        if (message.action == "update" 
+        if (message.action == "update"
             && message.params
             && message.params.switch
             && ["on", "off"].indexOf(message.params.switch) > -1)
@@ -59,7 +59,7 @@ export default class EWeLinkMirrorDeviceSwitchStatus extends Observer {
 
         if (!message.params || !message.params.online) return;
 
-        this.log.info(`[${this.name}]: Device ${message.deviceid} has come online. Getting source device power status...`)
+        this.log.info(`[${this.name}]: Device ${message.deviceid} has come online. Getting source device state...`)
 
         const resp = await this.eWeLinkConnection.getDevicePowerState(this.sourceDeviceId)
 

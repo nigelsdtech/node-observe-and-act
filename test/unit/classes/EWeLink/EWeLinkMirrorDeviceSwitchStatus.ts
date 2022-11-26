@@ -1,9 +1,10 @@
 import { should } from 'chai';
 import 'mocha';
-import {SinonStub, stub} from 'sinon' 
+import {stub} from 'sinon' 
 import { eWeLinkApi, iLogger } from '../../../../src/interfaces/commonInterfaces';
 import loggerStub from '../../../stubs/loggerStub';
 const e = require('ewelink-api')
+import { resetStubs } from '../../../utils';
 import EWeLinkMirrorDeviceSwitchStatus from '../../../../src/classes/EWeLink/EWeLinkMirrorDeviceSwitchStatus'
 
 should()
@@ -152,8 +153,5 @@ describe('EWeLinkMirrorDeviceSwitchStatus', ()=>{
             })
         })
     })
-})
 
-function resetStubs(stubs: SinonStub[]): void {
-    stubs.forEach(s=>s.reset())
-}
+})

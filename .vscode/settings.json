@@ -7,6 +7,11 @@
     "files.exclude": {
         "compiled": true,
     },
-    "npm.exclude": "compiled",
-    "mochaExplorer.ignore": ["compiled", "logs", "node_modules"]
+    "npm.exclude": "compiled/*",
+    "mochaExplorer.ignore": [
+        "compiled",
+        "logs",
+        "node_modules"
+    ],
+    "npm.enableRunFromFolder": true
 }

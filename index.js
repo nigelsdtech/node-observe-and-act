@@ -1,3 +1,3 @@
-var main = require('./compiled/main.js');
+var main = require('./compiled/src/main.js');
 
 main();

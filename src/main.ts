@@ -4,7 +4,7 @@ const
   reporter           = require('reporter'),
   {promisify}        = require('util');
 
-import Subject  from './classes/Subject';
+import Subject from './classes/Subject';
 import {iLogger, iSendErrorNotice} from './interfaces/commonInterfaces'
 import {generateSubject, knownSubjectType} from './subjectFactory'
 

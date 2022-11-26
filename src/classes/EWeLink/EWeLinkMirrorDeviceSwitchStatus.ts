@@ -24,7 +24,6 @@ export default class EWeLinkMirrorDeviceSwitchStatus extends Observer {
     public async update(message: any) {
 
         if (typeof message != 'object'
-            || message.deviceid != this.sourceDeviceId
             || !message.params
             || !message.action
         ) {
@@ -47,6 +46,7 @@ export default class EWeLinkMirrorDeviceSwitchStatus extends Observer {
     }
 
     private async processSysMsg(message: {
+        deviceid: string,
         params: {
             online: boolean
         }
@@ -54,20 +54,22 @@ export default class EWeLinkMirrorDeviceSwitchStatus extends Observer {
 
         this.log.debug(`[${this.name}] Processing sysmsg ${JSON.stringify(message,null,'\t')}`)
 
-        if (!message.params || !message.params.online) {
-            this.log.info(`[${this.name}] Discarding as irrelevant`)
-            return
-        }
+        if (message.deviceid != this.sourceDeviceId
+            && message.deviceid != this.satelliteDeviceId) return;
 
-        this.log.info(`[${this.name}]: Device has come online. Getting power status...`)
+        if (!message.params || !message.params.online) return;
+
+        this.log.info(`[${this.name}]: Device ${message.deviceid} has come online. Getting source device power status...`)
+
         const resp = await this.eWeLinkConnection.getDevicePowerState(this.sourceDeviceId)
 
         if (resp.error) return this.sendError(`Error getting device state - error: ${resp.error}, msg: ${resp.msg}`);
 
-        if (!resp.state || ["on", "off"].indexOf(resp.state) == -1) return;
+        if (!resp.state) return;
+        if (resp.state != "on" && resp.state != "off") return;
 
         this.log.info(`[${this.name}] Power state is ${resp.state}`)
-        return this.updateSwitch(resp.state as "on" | "off")
+        return this.updateSwitch(resp.state)
     }
 
     private async updateSwitch(state: 'on' | 'off'): Promise<void> {

@@ -54,6 +54,7 @@ export default class EWeLinkMirrorDeviceSwitchStatus extends Observer {
 
         this.log.info(`[${this.name}]: Device ${message.deviceid} has come online. Getting source device state...`)
 
+        this.eWeLinkConnection.getCredentials()
         const resp = await this.eWeLinkConnection.getDevicePowerState(this.sourceDeviceId)
 
         this.log.info(`[${this.name}]: Source device state: ${JSON.stringify(resp,null,"\t")}`)
@@ -98,6 +99,7 @@ export default class EWeLinkMirrorDeviceSwitchStatus extends Observer {
 
         try {
 
+            this.eWeLinkConnection.getCredentials()
             const resp = await this.eWeLinkConnection.setDevicePowerState(this.satelliteDeviceId,state)
 
             if ((resp).msg) this.sendError(`Error setting power state to ${state} - code: ${resp.error}, message: ${resp.msg}`)
